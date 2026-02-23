@@ -1,0 +1,15 @@
+1. Une capacité à faire des tri dans la bdd - système sélectionner les abstract qui nous intéressent et voir les décison concernés par ces abstracts : Dans quelle décisions on trouve ce problème / possibilité de le faire en croisé avec des métadonnées
+
+2. Pour un même abstract qu'on puisse comparer les décisions entre elles en fonction des périodes etc...
+l'évolution de la rédaction d'un abstract sur 10 ans
+
+3. Vouloir faire le lien avec la solution de la décision s'il y a une annulation ou un rejet (La solution des décisions et les écarts de voix)
+
+Liés aux métadonnées et aux écarts de voix 
+
+4. Croises les catégories d'abstract entre elle afin de voir les redondances/ consulter le regroupement avec une décision (Cartographie des abstracts) 
+
+Faire des stats descriptives / Savoir l'abstract correspond à combien de pourcentage de la décision
+
+
+Table analytique des décisions afin de réaliser des stats
