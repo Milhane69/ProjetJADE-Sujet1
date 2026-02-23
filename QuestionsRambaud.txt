@@ -1,15 +1,28 @@
-1. Une capacité à faire des tri dans la bdd - système sélectionner les abstract qui nous intéressent et voir les décison concernés par ces abstracts : Dans quelle décisions on trouve ce problème / possibilité de le faire en croisé avec des métadonnées
+Objectifs Analytiques et Besoins Métier (Projet JADE)
+1. Filtrage multicritère et requêtes croisées
 
-2. Pour un même abstract qu'on puisse comparer les décisions entre elles en fonction des périodes etc...
-l'évolution de la rédaction d'un abstract sur 10 ans
+Fonctionnalité : Création d'un système de tri avancé dans la base de données.
 
-3. Vouloir faire le lien avec la solution de la décision s'il y a une annulation ou un rejet (La solution des décisions et les écarts de voix)
+Objectif : Permettre la sélection d'abstracts spécifiques pour identifier les décisions de justice qui y sont associées (ex: "Dans quelles décisions retrouve-t-on cette problématique précise ?"). Ces recherches devront pouvoir être croisées dynamiquement avec les métadonnées existantes.
 
-Liés aux métadonnées et aux écarts de voix 
+2. Analyse temporelle et longitudinale
 
-4. Croises les catégories d'abstract entre elle afin de voir les redondances/ consulter le regroupement avec une décision (Cartographie des abstracts) 
+Fonctionnalité : Suivi chronologique des abstracts.
 
-Faire des stats descriptives / Savoir l'abstract correspond à combien de pourcentage de la décision
+Objectif : Rendre possible la comparaison des décisions associées à un même type d'abstract sur des périodes distinctes. L'enjeu est notamment d'observer l'évolution de la rédaction et de la jurisprudence sur le temps long (ex: sur une décennie).
 
+3. Corrélation avec les solutions juridiques et les données électorales
 
-Table analytique des décisions afin de réaliser des stats
+Fonctionnalité : Interconnexion entre l'analyse textuelle et les résultats des scrutins.
+
+Objectif : Lier les abstracts à la solution finale de la décision (annulation, rejet, etc.) et aux métadonnées électorales, en particulier les écarts de voix. Cela permettra de déterminer si certains types de raisonnements apparaissent plus souvent lorsque l'écart de voix est faible.
+
+4. Cartographie sémantique et statistiques descriptives
+
+Fonctionnalité : Création d'une table analytique dédiée à l'extraction de statistiques.
+
+Objectifs :
+
+Cartographie : Croiser les différentes catégories d'abstracts entre elles pour détecter les redondances et visualiser leurs regroupements au sein d'une même décision.
+
+Métriques : Générer des statistiques descriptives précises (par exemple : calculer le pourcentage de texte que représente l'abstract par rapport au volume total de la décision).
