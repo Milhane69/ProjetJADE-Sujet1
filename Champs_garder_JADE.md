@@ -1,119 +1,230 @@
 # 📊 Fiche d'Intégration des Données – Projet JADE
 
-**Objectif du document :** Ce document exhaustif détaille l'intégration de l'ensemble des fichiers sources pour enrichir la table `abstracts` avec : le texte juridique, les rubriques thématiques, les métadonnées des décisions, et les types juridiques associés. Il répertorie la totalité des champs (conservés pour le staging, conservés pour l'IA, et exclus) ainsi que l'architecture technique du pipeline ETL.
+**Objectif du document :** Ce document exhaustif détaille l'intégration de l'ensemble des fichiers sources pour enrichir la base de données JADE. Il répertorie les champs importés dans les tables de staging (`raw_*`), les champs conservés dans les tables finales, les champs exclus ainsi que l'architecture technique du pipeline ETL.
 
 ---
 
-## 📂 1. Inventaire et Rôle des Fichiers Sources
+# 📂 1. Inventaire et Rôle des Fichiers Sources
 
 Le pipeline JADE s'appuie sur la consolidation de quatre fichiers d'extraction :
 
-1. **`abstrats-2023-01-12.json` (Fichier Principal)**
-   * **Contenu :** Les abstracts juridiques associés aux décisions du CC, avec identifiants, textes et motifs.
-   * **Rôle :** C'est le fichier central du pipeline (base de la table `abstracts`). Il alimentera l'analyse textuelle, la similarité sémantique, l'extraction de mots-clés, le clustering et l'analyse LLM.
+## 1. `abstrats-2023-01-12.json` (Fichier Principal)
 
-2. **`rubriques-2023-01-12.json` (Référentiel Thématique)**
-   * **Contenu :** La hiérarchie thématique juridique (ex: 80724 → Pouvoir constituant).
-   * **Rôle :** Permet d'interpréter le `RubriqueId` via une jointure (`abstracts.RubriqueId = rubriques.Id`) pour le transformer en catégorie juridique exploitable.
+**Contenu :**
+Les abstracts juridiques associés aux décisions du Conseil Constitutionnel, avec leurs identifiants, textes et motifs.
 
-3. **`extraction table decisionset.xlsx` (Métadonnées)**
-   * **Contenu :** Les métadonnées complètes des décisions (dates, intitulés, liens).
-   * **Rôle :** Fichier de mapping essentiel pour relier le `DecisionId` de l'abstract au numéro officiel de la décision.
-
-4. **`type_sous_type.xlsx` (Typologie)**
-   * **Contenu :** Traduction des identifiants numériques de types de décisions.
-   * **Rôle :** Donne du sens au `TypeDecisionId` (ex: 3 → QPC). Permet le filtrage, les analyses statistiques et l'enrichissement sémantique.
+**Rôle :**
+C'est le fichier central du pipeline. Il constitue la source principale de la table `abstrats` et alimente les analyses textuelles.
 
 ---
 
-## ✅ 2. Les Champs CONSERVÉS (Par Fichier)
+## 2. `rubriques-2023-01-12.json` (Référentiel Thématique)
 
-Cette section liste tous les champs importés dans la base de données (Staging), dont les plus importants formeront le socle de l'analyse IA.
+**Contenu :**
+La hiérarchie des rubriques juridiques.
 
-### A. Depuis `abstrats.json`
-| Champ | Rôle | Exemple issu du corpus |
-| :--- | :--- | :--- |
-| **Id** | Identifiant technique | *294725* |
-| **ResumeAbstratId** | Identifiant du résumé | *250247* |
-| **RubriqueId** | Clé de jointure vers la thématique | *80726* |
-| **DecisionId** | Clé de jointure vers la décision | *69512* |
-| **SolutionImplicite** | Info juridique complémentaire | *Null* ou texte |
-| **ResumeAbstrat** | Texte principal à analyser par l'IA | *"Sous réserve, d'une part, des limitations..."* |
-| **RenvoiRubriqueId** | Lien vers rubrique associée | *Null* ou ID |
-| **motifs** | Points de droits invoqués | `["19", "20"]` |
-| **StatutAbstratId** | Filtre de publication (Staging) | *3* |
-
-### B. Depuis `rubriques.json`
-| Champ | Rôle | Exemple issu du corpus |
-| :--- | :--- | :--- |
-| **Id** | Clé primaire rubrique | *80726* |
-| **Lib** | Nom de la rubrique juridique | *"Étendue du pouvoir de révision"* |
-| **Niveau** | Profondeur hiérarchique | *5* |
-| **NumRubrique** | Position dans l'arbre | *"1.1.1.1.1"* |
-| **ParentId** | Rubrique parente | *80725* |
-| **RenvoiRubriqueId**| Relation transversale | *Null* ou ID |
-| **Ordre** | Ordre d'affichage (Staging) | *1* |
-
-### C. Depuis `decisionset.xlsx` (Champs Critiques & Secondaires)
-| Champ | Rôle | Exemple issu du corpus |
-| :--- | :--- | :--- |
-| **Id** | Identifiant de la décision | *66644* |
-| **Date** | Date de la décision | `2010-05-12` |
-| **Intitule** | Titre de la décision | *"Loi relative à l'ouverture à la concurrence..."* |
-| **ReferenceOfficielle**| Numéro officiel | *"2010-605 DC"* |
-| **LienSiteWeb** | URL officielle | *2010/2010605DC.htm* |
-| **LienLegifrance** | URL Légifrance | *CSCL1012832S* |
-| **ECLI** | Identifiant européen | *ECLI:FR:CC:2010:2010.605.DC* |
-| **TypeDecisionId** | Type global | *2* |
-| **SousTypeDecisionId** | Sous-type spécifique | *7* |
-| **Champs Secondaires** | Pour analyses avancées | *DepartementId, Demandeurs, Defendeurs, PremiereSaisineLe, AffaireGreffeId* |
-
-### D. Depuis `type_sous_type.xlsx`
-| Champ | Rôle | Exemple issu du corpus |
-| :--- | :--- | :--- |
-| **TypeDecisionSet Code** | Code global | *QPC, DC, LP* |
-| **SousTypeDecisionSet Lib**| Nom du type juridique | *"Question prioritaire de constitutionnalité"* |
+**Rôle :**
+Permet d'associer chaque abstract à une catégorie juridique exploitable.
 
 ---
 
-## ❌ 3. Les Champs ÉCARTÉS de l'Analyse IA (Nettoyage)
+## 3. `extraction table decisionset.xlsx` (Métadonnées des Décisions)
 
-Bien que certaines données soient importées en "Staging", elles seront exclues de la table finale `abstracts` fournie au modèle d'Intelligence Artificielle afin de réduire le bruit.
+**Contenu :**
+Les informations descriptives des décisions du Conseil Constitutionnel.
 
-| Fichier Source | Champ | Raison de l'exclusion pour l'IA |
-| :--- | :--- | :--- |
-| `abstrats.json` | **StatutAbstratId** | Indique le cycle de publication (brouillon, validation). JADE ne travaille que sur le corpus publié. |
-| `rubriques.json` | **Ordre, Niveau, ParentId** | Données de mise en page web (arborescence du site). L'IA n'a besoin que du libellé direct (`Lib`), pas de sa position dans un menu. |
-| `decisionset.xlsx` | **EstAnonymisee** | Information administrative (masquage des noms pour la vie privée). N'impacte pas le raisonnement juridique et les motifs analysés. |
-| `decisionset.xlsx` | **TitreCommercial** | Titre raccourci pour la presse/communication, souvent vide et moins rigoureux que l'intitulé officiel. |
-| `decisionset.xlsx` | **DatePublicationJO** | Pour l'étude chronologique, c'est la `Date` de la décision qui fait foi juridiquement, pas le délai d'impression au Journal Officiel. |
+**Rôle :**
+Permet d'enrichir les abstracts avec les métadonnées des décisions.
 
 ---
 
-## ⚙️ 4. Architecture Globale du Pipeline ETL
+## 4. `type_sous_type.xlsx` (Typologie)
 
-### A. Le Problème Technique et sa Solution
-* **Problème :** Le champ `DecisionId` (dans les abstracts) ne correspond pas directement au format `decision.numero` (ex: 2010-605 DC) attendu dans PostgreSQL.
-* **Solution :** Utiliser `decisionset.xlsx` comme **table de correspondance** (Pivot) pour faire la traduction via une jointure.
+**Contenu :**
+Les types et sous-types de décisions.
 
-### B. Architecture SQL Recommandée
-L'intégration des données doit se faire impérativement en deux temps pour garantir l'intégrité :
+**Rôle :**
+Permet d'ajouter une classification juridique aux décisions.
 
-1.  **Phase d'Import Brut (Tables Staging) :**
-    * `abstracts_raw`
-    * `rubriques_raw`
-    * `decisions_raw`
-    * `types_raw`
+---
 
-2.  **Phase de Nettoyage et Jointure (Tables Finales) :**
-    * `rubriques`
-    * `decisions`
-    * `types_decision`
-    * **`abstracts` (La table cible)**
+# ✅ 2. Les Champs CONSERVÉS dans les Tables de Staging (`raw_*`)
 
-**🎯 Résultat Attendu :**
-La construction d'une table finale enrichie (`abstracts`) contenant sur une seule et même ligne :
-* Le texte juridique brut.
-* Le thème juridique en clair.
-* La décision associée (référence et date).
-* Le type de procédure juridique.
+Les tables de staging conservent les données proches des fichiers sources afin de permettre les contrôles qualité et les transformations.
+
+---
+
+## A. Depuis `abstrats.json` → `raw_abstrats`
+
+| Champ | Rôle |
+| :--- | :--- |
+| **id** | Identifiant technique |
+| **statut_abstrat_id** | Statut de l'abstract |
+| **resume_abstrat_id** | Identifiant du résumé |
+| **rubrique_id** | Référence vers la rubrique |
+| **decision_id** | Référence vers la décision |
+| **solution_implicite** | Information juridique complémentaire |
+| **resume_abstrat** | Texte brut de l'abstract |
+| **renvoi_rubrique_id** | Référence vers une autre rubrique |
+| **motifs** | Motifs invoqués (JSONB) |
+
+---
+
+## B. Depuis `rubriques.json` → `raw_rubriques`
+
+| Champ | Rôle |
+| :--- | :--- |
+| **id** | Clé primaire rubrique |
+| **lib** | Libellé juridique |
+| **niveau** | Niveau hiérarchique |
+| **num_rubrique** | Numéro de rubrique |
+| **parent_id** | Rubrique parente |
+| **renvoi_rubrique_id** | Renvoi éventuel |
+| **ordre** | Ordre d'affichage |
+
+---
+
+## C. Depuis `decisionset.xlsx` → `raw_decisions`
+
+| Champ | Rôle |
+| :--- | :--- |
+| **id** | Identifiant de la décision |
+| **date_decision** | Date de décision |
+| **intitule** | Intitulé officiel |
+| **reference_officielle** | Référence officielle |
+| **referent** | Référent |
+| **lien_site_web** | Lien Conseil Constitutionnel |
+| **lien_legifrance** | Lien Légifrance |
+| **ecli** | Identifiant européen |
+| **type_decision_id** | Type de décision |
+| **sous_type_decision_id** | Sous-type de décision |
+| **departement_id** | Département concerné |
+| **demandeurs** | Demandeurs |
+| **defendeurs** | Défendeurs |
+| **premiere_saisine_le** | Date de première saisine |
+| **affaire_greffe_id** | Identifiant de greffe |
+
+---
+
+## D. Depuis `type_sous_type.xlsx` → `raw_types`
+
+| Champ | Rôle |
+| :--- | :--- |
+| **id** | Identifiant du type |
+| **type_decision_code** | Code du type de décision |
+| **sous_type_decision_lib** | Libellé du sous-type |
+
+---
+
+# 🗄️ 3. Les Champs CONSERVÉS dans les Tables Finales
+
+Après nettoyage et transformation, seules les informations jugées utiles sont conservées dans les tables finales.
+
+---
+
+## A. Table finale `abstrats`
+
+| Champ | Rôle |
+| :--- | :--- |
+| **id_abstrat** | Identifiant unique de l'abstract |
+| **reference_officielle** | Référence officielle de la décision |
+| **rubrique_id** | Référence vers la rubrique |
+| **texte_brut** | Texte juridique principal |
+| **motifs_invoques** | Motifs invoqués (JSONB) |
+
+---
+
+## B. Table finale `rubriques`
+
+| Champ | Rôle |
+| :--- | :--- |
+| **id_rubrique** | Identifiant de la rubrique |
+| **num_rubrique** | Numéro hiérarchique |
+| **lib** | Libellé juridique |
+| **niveau** | Niveau dans l'arborescence |
+| **parent_id** | Rubrique parente |
+
+---
+
+## C. Table finale `decision`
+
+| Champ | Rôle |
+| :--- | :--- |
+| **id_decision** | Identifiant de la décision |
+| **id_source** | Identifiant provenant de la source |
+| **numero** | Référence officielle |
+| **date_dec** | Date de décision |
+| **ecli** | Identifiant européen |
+| **nature** | Nature de la décision |
+| **solution** | Solution rendue |
+| **url_cc** | Lien Conseil Constitutionnel |
+| **departements** | Département(s) concerné(s) |
+| **circonscriptions** | Circonscription(s) concernée(s) |
+| **type_requete** | Type de requête |
+| **annee_saisine** | Année de saisine |
+
+---
+
+# ❌ 4. Les Champs ÉCARTÉS de l'Analyse IA (Nettoyage)
+
+Bien que certaines données soient importées dans les tables de staging, elles ne sont pas conservées dans les tables finales afin de simplifier l'exploitation.
+
+| Fichier Source | Champ | Raison |
+| :--- | :--- | :--- |
+| `abstrats.json` | **statut_abstrat_id** | Information technique |
+| `abstrats.json` | **resume_abstrat_id** | Identifiant interne |
+| `abstrats.json` | **decision_id** | Remplacé par la référence officielle |
+| `abstrats.json` | **solution_implicite** | Non retenu dans la structure finale |
+| `abstrats.json` | **renvoi_rubrique_id** | Non utilisé dans la table finale |
+| `decisionset.xlsx` | **intitule** | Non conservé |
+| `decisionset.xlsx` | **referent** | Information secondaire |
+| `decisionset.xlsx` | **lien_legifrance** | Non retenu |
+| `decisionset.xlsx` | **type_decision_id** | Non retenu |
+| `decisionset.xlsx` | **sous_type_decision_id** | Non retenu |
+| `decisionset.xlsx` | **demandeurs** | Non retenu |
+| `decisionset.xlsx` | **defendeurs** | Non retenu |
+| `decisionset.xlsx` | **premiere_saisine_le** | Non retenu |
+| `decisionset.xlsx` | **affaire_greffe_id** | Non retenu |
+| `rubriques.json` | **renvoi_rubrique_id** | Référence documentaire secondaire non utilisée dans les analyses |
+| `rubriques.json` | **ordre** | Utilisé uniquement pour l'ordre d'affichage |
+
+---
+
+# ⚙️ 5. Architecture Globale du Pipeline ETL
+
+## A. Phase d'Import Brut (Tables de Staging)
+
+Les données sont importées directement depuis les fichiers sources vers les tables de staging :
+
+- `raw_abstrats`
+- `raw_rubriques`
+- `raw_decisions`
+- `raw_types`
+
+---
+
+## B. Phase de Nettoyage et Transformation
+
+Les données sont ensuite nettoyées, filtrées et transformées afin d'alimenter les tables finales :
+
+- `abstrats`
+- `rubriques`
+- `decision`
+
+---
+
+# 📌 Résumé
+
+Le pipeline JADE suit une architecture en deux niveaux :
+
+1. **Tables de staging (`raw_*`)**
+   - Conservation des données brutes importées.
+   - Contrôle qualité.
+   - Préparation des transformations.
+
+2. **Tables finales**
+   - Données nettoyées.
+   - Structure simplifiée.
+   - Optimisation des requêtes SQL et des analyses.
+
+La table centrale du projet est désormais **`abstrats`**, enrichie grâce aux tables **`rubriques`** et **`decision`**.
